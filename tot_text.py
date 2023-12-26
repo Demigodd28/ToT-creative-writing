@@ -1,6 +1,5 @@
 from llama_cpp import Llama
-from tot.prompts.text import *
-import parameters
+from parameters import *
 
 llm = Llama(
     model_path = "openhermes-2.5-neural-chat-7b-v3-1-7b.Q2_K.gguf",
@@ -12,34 +11,33 @@ def Generator(llm, node):
     new_node ={}
     output = []
 
-    prompt = cot_prompt.format(input = node[1]['answer'][0] + node[1]['answer'][1] + node[1]['answer'][2] + node[1]['answer'][3])
+    # prompt = cot_prompt.format(input = node[1]['answer'][0] + node[1]['answer'][1] + node[1]['answer'][2] + node[1]['answer'][3])
 
     for _ in range(5):
         ans_from_llm = {}
         filtered_ans = ""
         if node[0] == None:
+            prompt = cot_prompt_1.format(input = node[1]['answer'][0] + node[1]['answer'][1] + node[1]['answer'][2] + node[1]['answer'][3])
+           
             ans_from_llm = llm(
                             prompt,
                             max_tokens = 2048,
                             stop=["\n\n", "known"],
                             echo = False)
-            ans_from_llm = ans_from_llm["choices"][0]["text"].split('Passage:')##left [plan:1.2.3.4., paragragh*4]
-            filtered_ans = ans_from_llm[0]##chose [0]
+            filtered_ans = ans_from_llm["choices"][0]["text"]
+            
         else:
-            prompt += f"""the plan has been chose to be {node[0][0]['answer']}, then only write the passage according to the plan. Your output should be of the following format:
-                    Passage:
-                    Your passage here.
-                    """
+            prompt = cot_prompt_2.format(input = node[1]['answer'][0] + node[1]['answer'][1] + node[1]['answer'][2] + node[1]['answer'][3], plan = node[0])
 
             ans_from_llm = llm(
                             prompt,
                             max_tokens = 2048,
                             stop=["\n\n", "known"],
                             echo = False)
-            filtered_ans = ans_from_llm["choices"][0]["text"]##left paragragh*4
+            filtered_ans = ans_from_llm["choices"][0]["text"]
        
-        new_node['id'] = parameters.id
-        parameters.increase_id()
+        new_node['id'] = id
+        increase_id()
         new_node['answer'] = [filtered_ans]
         new_node['value'] = None
         new_node['parent_node'] = node[1]['id']
@@ -64,7 +62,7 @@ def Evaluator(llm, node):#node = []
                 stop=["\n\n", "known"],
                 echo = False
             )
-    best = ans_from_llm["choices"][0]["text"].split()
+    best = ans_from_llm["choices"][0]["text"].split()##要想如何吐出好答案
     for i in range(5):
         if best[4] == str(node[i]['id']):
             break
@@ -82,18 +80,18 @@ if __name__ == '__main__':
     d = "Each person who knows you has a different perception of who you are."
     question.extend([a, b, c, d])
 
-    root_node = {'id':parameters.id,
+    root_node = {'id':id,
                 'answer':question,
                 'value':None,
                 'parent_node':None,
                 'ancester_value':None
                 }
-    parameters.increase_id()
+    increase_id()
 
     writing_plans = Generator(llm, [None, root_node])### Generator(llm, [plan, root_node])  no plan -->None
     best_plan = Evaluator(llm, writing_plans)
 
     passages = Generator(llm, [best_plan, root_node])
     best_passage = Evaluator(llm, passages)
-    print(best_plan[0]['answer'])
-    print(best_passage[0]['answer'])
+    print(best_plan[0]['answer']) ##print best plan
+    print(best_passage[0]['answer']) ## print best passage
