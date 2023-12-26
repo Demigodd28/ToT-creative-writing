@@ -11,31 +11,21 @@ def Generator(llm, node):
     new_node ={}
     output = []
 
-    # prompt = cot_prompt.format(input = node[1]['answer'][0] + node[1]['answer'][1] + node[1]['answer'][2] + node[1]['answer'][3])
-
     for _ in range(5):
         ans_from_llm = {}
         filtered_ans = ""
         if node[0] == None:
-            prompt = cot_prompt_1.format(input = node[1]['answer'][0] + node[1]['answer'][1] + node[1]['answer'][2] + node[1]['answer'][3])
-           
-            ans_from_llm = llm(
-                            prompt,
-                            max_tokens = 2048,
-                            stop=["\n\n", "known"],
-                            echo = False)
-            filtered_ans = ans_from_llm["choices"][0]["text"]
-            
+            prompt = cot_prompt_1.format(input = node[1]['answer'][0] + node[1]['answer'][1] + node[1]['answer'][2] + node[1]['answer'][3])       
         else:
             prompt = cot_prompt_2.format(input = node[1]['answer'][0] + node[1]['answer'][1] + node[1]['answer'][2] + node[1]['answer'][3], plan = node[0])
 
-            ans_from_llm = llm(
+        ans_from_llm = llm(
                             prompt,
                             max_tokens = 2048,
                             stop=["\n\n", "known"],
                             echo = False)
-            filtered_ans = ans_from_llm["choices"][0]["text"]
-       
+        filtered_ans = ans_from_llm["choices"][0]["text"]
+        
         new_node['id'] = id
         increase_id()
         new_node['answer'] = [filtered_ans]
