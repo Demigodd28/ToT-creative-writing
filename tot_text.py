@@ -15,9 +15,9 @@ def Generator(llm, node):
         ans_from_llm = {}
         filtered_ans = ""
         if node[0] == None:
-            prompt = cot_prompt_1.format(input = node[1]['answer'][0] + node[1]['answer'][1] + node[1]['answer'][2] + node[1]['answer'][3])       
+            prompt = cot_prompt_1.format(input = node[1]['answer'])
         else:
-            prompt = cot_prompt_2.format(input = node[1]['answer'][0] + node[1]['answer'][1] + node[1]['answer'][2] + node[1]['answer'][3], plan = node[0])
+            prompt = cot_prompt_2.format(input = node[1]['answer'], plan = node[0])
 
         ans_from_llm = llm(
                             prompt,
@@ -63,25 +63,27 @@ def Evaluator(llm, node):#node = []
 
 if __name__ == '__main__':
 
-    question = []  #input 4 sentence
-    a = "It isn't difficult to do a handstand if you just stand on your hands."
-    b = "It caught him off guard that space smelled of seared steak."
-    c = "When she didn't like a guy who was trying to pick her up, she started using sign language."
-    d = "Each person who knows you has a different perception of who you are."
-    question.extend([a, b, c, d])
+    with open('data_100_random_text.txt', 'r', encoding='utf-8') as file:
+        data = file.readlines()
+    
+    for i in range(100):
+        root_node = {'id':id,
+                    'answer':[data[i]],
+                    'value':None,
+                    'parent_node':None,
+                    'ancester_value':None
+                    }
+        increase_id()
 
-    root_node = {'id':id,
-                'answer':question,
-                'value':None,
-                'parent_node':None,
-                'ancester_value':None
-                }
-    increase_id()
+        writing_plans = Generator(llm, [None, root_node])### Generator(llm, [plan, root_node])  no plan -->None
+        best_plan = Evaluator(llm, writing_plans)
 
-    writing_plans = Generator(llm, [None, root_node])### Generator(llm, [plan, root_node])  no plan -->None
-    best_plan = Evaluator(llm, writing_plans)
-
-    passages = Generator(llm, [best_plan, root_node])
-    best_passage = Evaluator(llm, passages)
-    print(best_plan[0]['answer']) ##print best plan
-    print(best_passage[0]['answer']) ## print best passage
+        passages = Generator(llm, [best_plan, root_node])
+        best_passage = Evaluator(llm, passages)
+        with open('result.txt', 'w') as file:
+            file.write('---------------------------')
+            file.write(best_plan[0]['answer'][0])
+            file.write(best_passage[0]['answer'][0])
+            file.write('---------------------------')
+            
+    
