@@ -1,5 +1,6 @@
 from llama_cpp import Llama
 from parameters import *
+import random
 
 llm = Llama(
     model_path = "openhermes-2.5-neural-chat-7b-v3-1-7b.Q2_K.gguf",
@@ -53,10 +54,13 @@ def Evaluator(llm, node):#node = []
                 echo = False
             )
     best = ans_from_llm["choices"][0]["text"].split()##要想如何吐出好答案
-    for i in range(5):
-        if best[4] == str(node[i]['id']):
-            break
-    new_node = node[i] 
+    if len(best) == 5:    
+        for i in range(5):
+            if best[4] == str(node[i]['id']):
+                break
+        new_node = node[i]
+    else:
+        new_node = node[random.randint(0, 4)]
     output.append(new_node)
     return output
 
@@ -81,7 +85,6 @@ if __name__ == '__main__':
         passages = Generator(llm, [best_plan, root_node])
         best_passage = Evaluator(llm, passages)
         with open('result.txt', 'w') as file:
-            file.write('---------------------------')
             file.write(best_plan[0]['answer'][0])
             file.write(best_passage[0]['answer'][0])
             file.write('---------------------------')
