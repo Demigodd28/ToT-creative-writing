@@ -3,9 +3,10 @@ from parameters import *
 import random
 
 llm = Llama(
-    model_path = "openhermes-2.5-neural-chat-7b-v3-1-7b.Q2_K.gguf",
+    model_path = "openhermes-2.5-mistral-7b.Q8_0.gguf",
     n_ctx=2048,
     # n_gpu_layers=-1
+    temperature = 0.7
 )
 
 def Generator(llm, node):
@@ -35,6 +36,7 @@ def Generator(llm, node):
         new_node['ancester_value'] = None
 
         output.append(new_node)
+    print(ans_from_llm)
     return output
 
         
@@ -50,10 +52,14 @@ def Evaluator(llm, node):#node = []
     ans_from_llm = llm(
                 prompt,
                 max_tokens = 2048,
-                stop=["\n\n", "known"],
+                # stop=["\n\n", "known"],
                 echo = False
             )
-    best = ans_from_llm["choices"][0]["text"].split()##要想如何吐出好答案
+    print(prompt)
+    print(ans_from_llm)
+    best = ans_from_llm["choices"][0]["text"].split()##要想如何不容易死掉
+    print(best)
+
     if len(best) == 5:    
         for i in range(5):
             if best[4] == str(node[i]['id']):
@@ -70,7 +76,7 @@ if __name__ == '__main__':
     with open('data_100_random_text.txt', 'r', encoding='utf-8') as file:
         data = file.readlines()
     
-    for i in range(100):
+    for i in range(1):
         root_node = {'id':id,
                     'answer':[data[i]],
                     'value':None,
