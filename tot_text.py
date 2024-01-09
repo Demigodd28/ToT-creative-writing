@@ -6,7 +6,7 @@ llm = Llama(
     model_path = "openhermes-2.5-mistral-7b.Q8_0.gguf",
     n_ctx=2048,
     # n_gpu_layers=-1
-    temperature = 0.7
+    
 )
 
 def Generator(llm, node):
@@ -22,10 +22,15 @@ def Generator(llm, node):
             prompt = cot_prompt_2.format(input = node[1]['answer'], plan = node[0])
 
         ans_from_llm = llm(
-                            prompt,
-                            max_tokens = 2048,
-                            stop=["\n\n", "known"],
-                            echo = False)
+            prompt,
+            max_tokens = 2048,
+            stop=["\n\n", "known"],
+            echo = False,
+            repeat_penalty = 1.1,
+            temperature = 0.7,
+            top_k = 40,
+            top_p = 0.9,
+        )
         filtered_ans = ans_from_llm["choices"][0]["text"]
         
         new_node['id'] = id
@@ -36,7 +41,6 @@ def Generator(llm, node):
         new_node['ancester_value'] = None
 
         output.append(new_node)
-    print(ans_from_llm)
     return output
 
         
@@ -50,15 +54,16 @@ def Evaluator(llm, node):#node = []
     prompt  = vote_prompt + 'Choices: ' + node[0]['answer'][0] + node[1]['answer'][0] + node[2]['answer'][0] + node[3]['answer'][0] + node[4]['answer'][0]
 
     ans_from_llm = llm(
-                prompt,
-                max_tokens = 2048,
-                # stop=["\n\n", "known"],
-                echo = False
-            )
-    print(prompt)
-    print(ans_from_llm)
+        prompt,
+        max_tokens = 2048,
+        stop=["\n\n", "known"],
+        echo = False,
+        repeat_penalty = 1.1,
+        temperature = 0.7,
+        top_k = 40,
+        top_p = 0.9,
+    )
     best = ans_from_llm["choices"][0]["text"].split()##要想如何不容易死掉
-    print(best)
 
     if len(best) == 5:    
         for i in range(5):
@@ -76,23 +81,44 @@ if __name__ == '__main__':
     with open('data_100_random_text.txt', 'r', encoding='utf-8') as file:
         data = file.readlines()
     
-    for i in range(1):
-        root_node = {'id':id,
-                    'answer':[data[i]],
-                    'value':None,
-                    'parent_node':None,
-                    'ancester_value':None
-                    }
+    root_node = {
+        'id':id,
+        'answer':[data[0]],
+        'value':None,
+        'parent_node':None,
+        'ancester_value':None
+    }
+    increase_id()
+
+    writing_plans = Generator(llm, [None, root_node])### Generator(llm, [plan, root_node])  no plan -->None
+    best_plan = Evaluator(llm, writing_plans)
+
+    passages = Generator(llm, [best_plan, root_node])
+    best_passage = Evaluator(llm, passages)
+    with open('result.txt', 'w') as file:### open new txt
+        file.write(best_plan[0]['answer'][0])
+        file.write('--- ---')
+        file.write(best_passage[0]['answer'][0])
+        file.write('\n---------------------------\n')
+    for i in range(1, 3):
+        root_node = {
+            'id':id,
+            'answer':[data[i]],
+            'value':None,
+            'parent_node':None,
+            'ancester_value':None
+        }
         increase_id()
 
-        writing_plans = Generator(llm, [None, root_node])### Generator(llm, [plan, root_node])  no plan -->None
+        writing_plans = Generator(llm, [None, root_node])
         best_plan = Evaluator(llm, writing_plans)
 
         passages = Generator(llm, [best_plan, root_node])
         best_passage = Evaluator(llm, passages)
-        with open('result.txt', 'w') as file:
+        with open('result.txt', 'a') as file:### continue writing in txt
             file.write(best_plan[0]['answer'][0])
+            file.write('--- ---')
             file.write(best_passage[0]['answer'][0])
-            file.write('---------------------------')
+            file.write('\n---------------------------\n')
             
     
