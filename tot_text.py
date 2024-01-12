@@ -119,5 +119,3 @@ if __name__ == '__main__':
             file.write('--- ---')
             file.write(best_passage[0]['answer'][0])
             file.write('\n---------------------------\n')
-            
-    
