@@ -5,8 +5,7 @@ import random
 llm = Llama(
     model_path = "openhermes-2.5-mistral-7b.Q8_0.gguf",
     n_ctx=2048,
-    # n_gpu_layers=-1
-    
+    # n_gpu_layers=-1    
 )
 
 def Generator(llm, node):
