@@ -11,13 +11,15 @@ llm = OpenAI(
 def Generator(llm, node):
     new_node ={}
     output = []
+    completion_token = 0##calculate usage
+    prompt_token = 0 
     ##
     a = node[1]['answer'][0].split('. ')
     a = [sentence.strip() for sentence in a if sentence.strip()]
     for i in range(len(a)):
         a[i] += '.'
     ##put rootnode['answer'] into a 4 elements list
-        
+    
     for _ in range(5):
         ans_from_llm = {}
         filtered_ans = ""
@@ -33,6 +35,8 @@ def Generator(llm, node):
                 )
                 filtered_ans += ans_from_llm.choices[0].message.content + "\n"
                 # print('ok\t')
+                completion_token += ans_from_llm.usage.completion_tokens
+                prompt_token += ans_from_llm.usage.prompt_tokens
             else:
                 ##
                 b = node[0][0]['answer'][0].split('. ')
@@ -52,6 +56,8 @@ def Generator(llm, node):
                                 {"role": "user", "content": user_content}
                             ]
                         )
+                        completion_token += ans_from_llm.usage.completion_tokens
+                        prompt_token += ans_from_llm.usage.prompt_tokens
                         check_1 = check(ans_from_llm.choices[0].message.content, a[i])
                     else: break
                 # print(ans_from_llm.choices[0].message.content + '\n\n')    
@@ -66,7 +72,8 @@ def Generator(llm, node):
         new_node['ancester_value'] = None
 
         output.append(new_node)
-        print('@')
+    output.append([completion_token, prompt_token])
+        # print('@')
     return output
 
         
@@ -76,14 +83,18 @@ def Evaluator(llm, node):#node = []
     output = []
     best = []
     ans_from_llm = {}
+    completion_token = 0##calculate usage
+    prompt_token = 0
 
     ans_from_llm = llm.chat.completions.create(
-            model = 'gpt-3.5-turbo-1106',
-            messages = [
-                {"role": "system", "content": system_voteprompt},
-                {"role": "user", "content": user_voteprompt + 'Choices: ' + node[0]['answer'][0] + node[1]['answer'][0] + node[2]['answer'][0] + node[3]['answer'][0] + node[4]['answer'][0]}
-            ]
-        )
+        model = 'gpt-3.5-turbo-1106',
+        messages = [
+            {"role": "system", "content": system_voteprompt},
+            {"role": "user", "content": user_voteprompt + 'Choices: ' + node[0]['answer'][0] + node[1]['answer'][0] + node[2]['answer'][0] + node[3]['answer'][0] + node[4]['answer'][0]}
+        ]
+    )
+    completion_token += ans_from_llm.usage.completion_tokens
+    prompt_token += ans_from_llm.usage.prompt_tokens
     best = ans_from_llm.choices[0].message.content.split()##暫時用random解決問題
 
     if len(best) == 5:    
@@ -94,6 +105,7 @@ def Evaluator(llm, node):#node = []
     else:
         new_node = node[random.randint(0, 4)]
     output.append(new_node)
+    output.append([completion_token, prompt_token])
     return output
 
 
@@ -126,11 +138,29 @@ if __name__ == '__main__':
     }
     increase_id()
 
+    completion_token = 0##calculate usage
+    prompt_token = 0
+
     writing_plans = Generator(llm, [None, root_node])### Generator(llm, [plan, root_node])  no plan -->None
+    completion_token += writing_plans[-1][0]
+    prompt_token += writing_plans[-1][1]
+    writing_plans = writing_plans[:-1]
+    
     best_plan = Evaluator(llm, writing_plans)
+    completion_token += best_plan[-1][0]
+    prompt_token += best_plan[-1][1]
+    best_plan = best_plan[:-1]
 
     passages = Generator(llm, [best_plan, root_node])
+    completion_token += passages[-1][0]
+    prompt_token += passages[-1][1]
+    passages = passages[:-1]
+
     best_passage = Evaluator(llm, passages)
+    completion_token += best_passage[-1][0]
+    prompt_token += best_passage[-1][1]
+    best_passage = best_passage[:-1]
+
     with open('GPT_result.txt', 'w') as file:### open new txt
         file.write(root_node['answer'][0])
         file.write('\n...........................\n')
@@ -138,8 +168,10 @@ if __name__ == '__main__':
         file.write('\n--- --- --- --- --- --- ---\n')
         file.write(best_passage[0]['answer'][0])
         file.write('\n---------------------------\n')
-    finish = time.time()
-    print(finish - start)    
+        file.write(f"\n\ntotal completion token = {completion_token}")
+        file.write(f"\ntotal prompt token = {prompt_token}")
+
+       
     # for i in range(1, 3):
     #     root_node = {
     #         'id':id,
@@ -156,9 +188,14 @@ if __name__ == '__main__':
     #     passages = Generator(llm, [best_plan, root_node])
     #     best_passage = Evaluator(llm, passages)
     #     with open('result.txt', 'a') as file:### continue writing in txt
+    #         file.write(root_node['answer'][0])
+    #         file.write('\n...........................\n')
     #         file.write(best_plan[0]['answer'][0])
-    #         file.write('--- ---')
+    #         file.write('\n--- --- --- --- --- --- ---\n')
     #         file.write(best_passage[0]['answer'][0])
     #         file.write('\n---------------------------\n')
-            
+    finish = time.time()
+    with open('GPT_result.txt', 'a') as file:
+        file.write(f"\ntotal time = {finish - start}")
+    print(finish - start)         
     
