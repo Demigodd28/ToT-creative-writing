@@ -1,12 +1,18 @@
 from llama_cpp import Llama
+from openai import OpenAI
 from parameters import *
 import random
 import time
+import re
 
-llm = Llama(
+llm_1 = Llama(
     model_path = "openhermes-2.5-mistral-7b.Q8_0.gguf",
     n_ctx=2048,
     # n_gpu_layers=-1    
+)
+
+llm_2 = OpenAI(
+    api_key = OPENAI_API_KEY
 )
 
 def Generator(llm, node):
@@ -19,7 +25,7 @@ def Generator(llm, node):
         
         if node[0] == None:
             prompt = cot_prompt_1.format(input = node[1]['answer'])   
-            ans_from_llm = llm(
+            ans_from_llm = llm_1(
                 prompt,
                 max_tokens = 2048,
                 stop=["\n\n", "known"],
@@ -35,7 +41,7 @@ def Generator(llm, node):
             check_1 = False        
             for _ in range(5):      
                 if check_1 == False:
-                    ans_from_llm = llm(
+                    ans_from_llm = llm_1(
                         prompt,
                         max_tokens = 2048,
                         stop=["\n\n", "known"],
@@ -69,7 +75,7 @@ def Evaluator(llm, node):#node = []
 
     prompt  = vote_prompt + 'Choices: ' + node[0]['answer'][0] + node[1]['answer'][0] + node[2]['answer'][0] + node[3]['answer'][0] + node[4]['answer'][0]
 
-    ans_from_llm = llm(
+    ans_from_llm = llm_1(
         prompt,
         max_tokens = 2048,
         stop=["\n\n", "known"],
@@ -90,6 +96,32 @@ def Evaluator(llm, node):#node = []
         new_node = node[random.randint(0, 4)]
     output.append(new_node)
     return output
+
+def Grade(llm_2, text):
+    ans_from_llm = {}
+    score = []
+    completion_token = 0##calculate usage
+    prompt_token = 0
+    user_content = score_prompt + text
+
+    match = None
+    for _ in range(3):    
+        for _ in range(3):
+            if match is None:    
+                ans_from_llm = llm_2.chat.completions.create(
+                    model = 'gpt-4-0613',
+                    messages = [
+                        {"role": "user", "content": user_content}
+                    ]
+                )
+                filtered_ans = ans_from_llm.choices[0].message.content
+                match = re.search(r'\d+', filtered_ans)
+                completion_token += ans_from_llm.usage.completion_tokens
+                prompt_token += ans_from_llm.usage.prompt_tokens
+            else: break    
+        if match is not None and match.group().isdigit():
+            score.append(int(match.group()))    
+    return [sum(score)/len(score), [completion_token, prompt_token]]
 
 def check(text, input_data):##examine if last sentence is matched input
     fragment_1 = text.replace(', ', '. ')
@@ -118,11 +150,16 @@ if __name__ == '__main__':
     }
     increase_id()
 
-    writing_plans = Generator(llm, [None, root_node])### Generator(llm, [plan, root_node])  no plan -->None
-    best_plan = Evaluator(llm, writing_plans)
+    writing_plans = Generator(llm_1, [None, root_node])### Generator(llm, [plan, root_node])  no plan -->None
+    best_plan = Evaluator(llm_1, writing_plans)
 
-    passages = Generator(llm, [best_plan, root_node])
-    best_passage = Evaluator(llm, passages)
+    passages = Generator(llm_1, [best_plan, root_node])
+    best_passage = Evaluator(llm_1, passages)
+
+    graded = Grade(llm_2, best_passage[0]['answer'][0])
+    score = graded[0]
+    completion_token = graded[1][0]
+    prompt_token = graded[1][1]
 
     with open('result.txt', 'w', encoding='utf-8') as file:### open new txt
         file.write(root_node['answer'][0])
@@ -131,28 +168,11 @@ if __name__ == '__main__':
         file.write('\n--- --- --- --- --- --- ---\n')
         file.write(best_passage[0]['answer'][0])
         file.write('\n---------------------------\n')
-    # for i in range(1, 3):
-    #     root_node = {
-    #         'id':id,
-    #         'answer':[data[i]],
-    #         'value':None,
-    #         'parent_node':None,
-    #         'ancester_value':None
-    #     }
-    #     increase_id()
-
-    #     writing_plans = Generator(llm, [None, root_node])
-    #     best_plan = Evaluator(llm, writing_plans)
-
-    #     passages = Generator(llm, [best_plan, root_node])
-    #     best_passage = Evaluator(llm, passages)
-
-    #     with open('result.txt', 'a', encoding='utf-8') as file:### continue writing in txt
-    #         file.write(root_node['answer'][0])
-    #         file.write('\n...........................\n')
-    #         file.write(best_plan[0]['answer'][0])
-    #         file.write('\n--- --- --- --- --- --- ---\n')
-    #         file.write(best_passage[0]['answer'][0])
-    #         file.write('\n---------------------------\n')
+        file.write(f"\n\nThe coherent score is {score}")
+        file.write(f"\nGraded completion token = {completion_token}")
+        file.write(f"\nGraded prompt token = {prompt_token}")
+    
     finish = time.time()
+    with open('result.txt', 'a') as file:
+        file.write(f"\ntotal time = {finish - start}")
     print(finish - start)
