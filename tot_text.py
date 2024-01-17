@@ -6,7 +6,7 @@ import time
 import re
 
 llm_1 = Llama(
-    model_path = "openhermes-2.5-mistral-7b.Q8_0.gguf",
+    model_path = "vicuna-7b-v1.5.Q8_0.gguf",
     n_ctx=2048,
     # n_gpu_layers=-1    
 )
@@ -25,7 +25,7 @@ def Generator(llm, node):
         
         if node[0] == None:
             prompt = cot_prompt_1.format(input = node[1]['answer'])   
-            ans_from_llm = llm_1(
+            ans_from_llm = llm(
                 prompt,
                 max_tokens = 2048,
                 stop=["\n\n", "known"],
@@ -41,7 +41,7 @@ def Generator(llm, node):
             check_1 = False        
             for _ in range(5):      
                 if check_1 == False:
-                    ans_from_llm = llm_1(
+                    ans_from_llm = llm(
                         prompt,
                         max_tokens = 2048,
                         stop=["\n\n", "known"],
@@ -75,7 +75,7 @@ def Evaluator(llm, node):#node = []
 
     prompt  = vote_prompt + 'Choices: ' + node[0]['answer'][0] + node[1]['answer'][0] + node[2]['answer'][0] + node[3]['answer'][0] + node[4]['answer'][0]
 
-    ans_from_llm = llm_1(
+    ans_from_llm = llm(
         prompt,
         max_tokens = 2048,
         stop=["\n\n", "known"],
@@ -97,7 +97,7 @@ def Evaluator(llm, node):#node = []
     output.append(new_node)
     return output
 
-def Grade(llm_2, text):
+def Grade(llm, text):
     ans_from_llm = {}
     score = []
     completion_token = 0##calculate usage
@@ -108,7 +108,7 @@ def Grade(llm_2, text):
     for _ in range(3):    
         for _ in range(3):
             if match is None:    
-                ans_from_llm = llm_2.chat.completions.create(
+                ans_from_llm = llm.chat.completions.create(
                     model = 'gpt-4-0613',
                     messages = [
                         {"role": "user", "content": user_content}
@@ -176,3 +176,5 @@ if __name__ == '__main__':
     with open('result.txt', 'a') as file:
         file.write(f"\ntotal time = {finish - start}")
     print(finish - start)
+    del llm_1#
+    del llm_2
