@@ -30,22 +30,7 @@ def Generator(llm, node):
                 top_p = 0.9,
             )
             filtered_ans = ans_from_llm["choices"][0]["text"].replace("Plans:\n", "")
-        else:
-            # b = node[1]['answer'][0].split('.')##chop input into 4 elements in list
-            # b = [sentence.strip() for sentence in b if sentence.strip()]
-            # for j in range(4):
-            #     b[j] += '.'
-            # if node[0][0]['answer'][0].count('\n') >= 3:##examine if plan have at least 4
-            #     a = node[0][0]['answer'][0].split('\n')
-            #     a = [sentence.strip() for sentence in a if sentence.strip()]
-            # else:
-            #     a = node[0][0]['answer'][0].split('.')##plan < 4, then copy a[0]
-            #     if len(a) < 4:
-            #         for _ in range(1, 5):
-            #             a.append(a[0])
-            #     for k in range(len(a)):
-            #         a[k] = a[0]
-                          
+        else:                          
             prompt = cot_prompt_2.format(input = node[1]['answer'], plan = node[0][0]['answer'][0])
             check_1 = False        
             for _ in range(5):      
