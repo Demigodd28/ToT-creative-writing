@@ -6,7 +6,7 @@ import time
 import re
 
 llm_1 = Llama(
-    model_path = "vicuna-7b-v1.5.Q8_0.gguf",
+    model_path = "openhermes-2.5-mistral-7b.Q8_0.gguf",
     n_ctx=2048,
     # n_gpu_layers=-1    
 )
@@ -98,30 +98,32 @@ def Evaluator(llm, node):#node = []
     return output
 
 def Grade(llm, text):
-    ans_from_llm = {}
-    score = []
-    completion_token = 0##calculate usage
-    prompt_token = 0
-    user_content = score_prompt + text
+    scores = []
+    completion_tokens = 0
+    prompt_tokens = 0
 
-    match = None
-    for _ in range(3):    
-        for _ in range(3):
-            if match is None:    
-                ans_from_llm = llm.chat.completions.create(
-                    model = 'gpt-4-0613',
-                    messages = [
-                        {"role": "user", "content": user_content}
-                    ]
-                )
-                filtered_ans = ans_from_llm.choices[0].message.content
-                match = re.search(r'\d+', filtered_ans)
-                completion_token += ans_from_llm.usage.completion_tokens
-                prompt_token += ans_from_llm.usage.prompt_tokens
-            else: break    
-        if match is not None and match.group().isdigit():
-            score.append(int(match.group()))    
-    return [sum(score)/len(score), [completion_token, prompt_token]]
+    for _ in range(3):
+        try:
+            ans_from_llm = llm.chat.completions.create(
+                model='gpt-4-0613',
+                messages=[
+                    {"role": "user", "content": score_prompt + text}
+                ]
+            )
+            
+            completion_tokens += ans_from_llm.usage.completion_tokens
+            prompt_tokens += ans_from_llm.usage.prompt_tokens
+
+            filtered_ans = ans_from_llm.choices[0].message.content
+            match = re.search(r'\d+', filtered_ans)
+
+            if match and match.group().isdigit():
+                scores.append(int(match.group()))
+        except Exception as e:
+            print(f"An error occurred during grading: {e}")
+
+    average_score = sum(scores) / len(scores) if scores else 0
+    return [average_score, [completion_tokens, prompt_tokens]]
 
 def check(text, input_data):##examine if last sentence is matched input
     fragment_1 = text.replace(', ', '. ')
@@ -176,5 +178,3 @@ if __name__ == '__main__':
     with open('result.txt', 'a') as file:
         file.write(f"\ntotal time = {finish - start}")
     print(finish - start)
-    del llm_1#
-    del llm_2
