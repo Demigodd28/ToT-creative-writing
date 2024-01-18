@@ -1,3 +1,4 @@
+import gc
 from llama_cpp import Llama
 from openai import OpenAI
 from parameters import *
@@ -129,6 +130,7 @@ def check(text, input_data):##examine if last sentence is matched input
     fragment_1 = text.replace(', ', '. ')
     fragments_1 = fragment_1.split('. ')
 
+    # print(len(fragments_1))
     for i in range(len(fragments_1)):
         fragments_1[i] = fragments_1[i].strip()
 
@@ -145,7 +147,7 @@ if __name__ == '__main__':
     
     root_node = {
         'id':id,
-        'answer':[data[1]],
+        'answer':[data[2]],
         'value':None,
         'parent_node':None,
         'ancester_value':None
@@ -178,3 +180,4 @@ if __name__ == '__main__':
     with open('result.txt', 'a') as file:
         file.write(f"\ntotal time = {finish - start}")
     print(finish - start)
+    gc.collect()
