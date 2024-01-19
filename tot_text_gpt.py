@@ -1,11 +1,11 @@
-from parameters import *
-import random
-from openai import OpenAI
+import os
 import re
 import time
-from datetime import date
-import os
+import random
 import matplotlib.pyplot as plt
+from datetime import date
+from openai import OpenAI
+from parameters import *
 
 llm = OpenAI(
     api_key = OPENAI_API_KEY
@@ -229,7 +229,7 @@ if __name__ == '__main__':
             file.write(f"\ngpt-4 completion token = {completion_token_4}")
             file.write(f"\ngpt-4 prompt token = {prompt_token_4}")
         finish = time.time()
-        with open(file_name, 'a') as file:
+        with open(file_name, 'a', encoding='utf-8') as file:
             file.write(f"\n\ntotal time = {finish - start}")
        
         score_list.append(score)
