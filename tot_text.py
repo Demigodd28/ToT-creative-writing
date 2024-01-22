@@ -1,10 +1,11 @@
-import gc
 from llama_cpp import Llama
 from openai import OpenAI
 from parameters import *
 import random
 import time
 import re
+from datetime import date
+import os
 
 llm_1 = Llama(
     model_path = "openhermes-2.5-mistral-7b.Q8_0.gguf",
@@ -28,7 +29,7 @@ def Generator(llm, node):
             prompt = cot_prompt_1.format(input = node[1]['answer'])   
             ans_from_llm = llm(
                 prompt,
-                max_tokens = 2048,
+                max_tokens = 1800,
                 stop=["\n\n", "known"],
                 echo = False,
                 repeat_penalty = 1.1,
@@ -44,7 +45,7 @@ def Generator(llm, node):
                 if check_1 == False:
                     ans_from_llm = llm(
                         prompt,
-                        max_tokens = 2048,
+                        max_tokens = 1800,
                         stop=["\n\n", "known"],
                         echo = False,
                         repeat_penalty = 1.1,
@@ -78,7 +79,7 @@ def Evaluator(llm, node):#node = []
 
     ans_from_llm = llm(
         prompt,
-        max_tokens = 2048,
+        max_tokens = 1800,
         stop=["\n\n", "known"],
         echo = False,
         repeat_penalty = 1.1,
@@ -103,7 +104,7 @@ def Grade(llm, text):
     completion_tokens = 0
     prompt_tokens = 0
 
-    for _ in range(3):
+    for _ in range(5):# grade for 5 times
         try:
             ans_from_llm = llm.chat.completions.create(
                 model='gpt-4-0613',
@@ -141,43 +142,53 @@ def check(text, input_data):##examine if last sentence is matched input
 
 
 if __name__ == '__main__':
-    start = time.time()
+    
+    score_list = []
     with open('data_100_random_text.txt', 'r', encoding='utf-8') as file:
         data = file.readlines()
+
+    folder_name = f'Result {date.today()}'## build new folder 'Result 2024-01-22'
+    if not os.path.exists(folder_name):
+        os.makedirs(folder_name)
     
-    root_node = {
-        'id':id,
-        'answer':[data[2]],
-        'value':None,
-        'parent_node':None,
-        'ancester_value':None
-    }
-    increase_id()
+    for i in range(3):
+        start = time.time()
+        file_name = f'{folder_name}/result_{i}.txt'    
+        root_node = {
+            'id':id,
+            'answer':[data[i]],
+            'value':None,
+            'parent_node':None,
+            'ancester_value':None
+        }
+        increase_id()
 
-    writing_plans = Generator(llm_1, [None, root_node])### Generator(llm, [plan, root_node])  no plan -->None
-    best_plan = Evaluator(llm_1, writing_plans)
+        writing_plans = Generator(llm_1, [None, root_node])### Generator(llm, [plan, root_node])  no plan -->None
+        best_plan = Evaluator(llm_1, writing_plans)
 
-    passages = Generator(llm_1, [best_plan, root_node])
-    best_passage = Evaluator(llm_1, passages)
+        passages = Generator(llm_1, [best_plan, root_node])
+        best_passage = Evaluator(llm_1, passages)
 
-    graded = Grade(llm_2, best_passage[0]['answer'][0])
-    score = graded[0]
-    completion_token = graded[1][0]
-    prompt_token = graded[1][1]
+        graded = Grade(llm_2, best_passage[0]['answer'][0])
+        score = graded[0]
+        completion_token = graded[1][0]
+        prompt_token = graded[1][1]
 
-    with open('result.txt', 'w', encoding='utf-8') as file:### open new txt
-        file.write(root_node['answer'][0])
-        file.write('\n...........................\n')
-        file.write(best_plan[0]['answer'][0])
-        file.write('\n--- --- --- --- --- --- ---\n')
-        file.write(best_passage[0]['answer'][0])
-        file.write('\n---------------------------\n')
-        file.write(f"\n\nThe coherent score is {score}")
-        file.write(f"\nGraded completion token = {completion_token}")
-        file.write(f"\nGraded prompt token = {prompt_token}")
-    
-    finish = time.time()
-    with open('result.txt', 'a') as file:
-        file.write(f"\ntotal time = {finish - start}")
-    print(finish - start)
-    gc.collect()
+        with open(file_name, 'w', encoding='utf-8') as file:### open new txt
+            file.write(root_node['answer'][0])
+            file.write('\n...........................\n')
+            file.write(best_plan[0]['answer'][0])
+            file.write('\n--- --- --- --- --- --- ---\n')
+            file.write(best_passage[0]['answer'][0])
+            file.write('\n---------------------------\n')
+            file.write(f"\n\nThe coherent score is {score}")
+            file.write(f"\nGraded completion token = {completion_token}")
+            file.write(f"\nGraded prompt token = {prompt_token}")
+        
+        finish = time.time()
+        with open(file_name, 'a', encoding = 'utf-8') as file:
+            file.write(f"\n\ntotal time = {finish - start}")
+
+        score_list.append(score)
+        print(finish - start)
+    print(score_list)

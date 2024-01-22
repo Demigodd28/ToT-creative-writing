@@ -171,7 +171,7 @@ if __name__ == '__main__':
     with open('data_100_random_text.txt', 'r', encoding='utf-8') as file:
         data = file.readlines()
     
-    folder_name = f'GPT Result{date.today()}'## build new folder 'Result2024-01-19'
+    folder_name = f'GPT Result {date.today()}'## build new folder 'GPT Result 2024-01-19'
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
 
