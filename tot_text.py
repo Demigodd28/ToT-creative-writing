@@ -29,7 +29,7 @@ def Generator(llm, node):
             prompt = cot_prompt_1.format(input = node[1]['answer'])   
             ans_from_llm = llm(
                 prompt,
-                max_tokens = 1800,
+                max_tokens = 1600,
                 stop=["\n\n", "known"],
                 echo = False,
                 repeat_penalty = 1.1,
@@ -45,7 +45,7 @@ def Generator(llm, node):
                 if check_1 == False:
                     ans_from_llm = llm(
                         prompt,
-                        max_tokens = 1800,
+                        max_tokens = 1600,
                         stop=["\n\n", "known"],
                         echo = False,
                         repeat_penalty = 1.1,
@@ -151,7 +151,7 @@ if __name__ == '__main__':
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
     
-    for i in range(3):
+    for i in range(4, 7):
         start = time.time()
         file_name = f'{folder_name}/result_{i}.txt'    
         root_node = {
@@ -187,7 +187,7 @@ if __name__ == '__main__':
         
         finish = time.time()
         with open(file_name, 'a', encoding = 'utf-8') as file:
-            file.write(f"\n\ntotal time = {finish - start}")
+            file.write(f"\n\nGenerated time = {finish - start}")
 
         score_list.append(score)
         print(finish - start)
