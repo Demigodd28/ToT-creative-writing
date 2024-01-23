@@ -166,7 +166,6 @@ def Draw(data_list, folder):##draw the barchart
     plt.show()
 
 if __name__ == '__main__':
-    start = time.time()
     score_list = []## record all the score
     with open('data_100_random_text.txt', 'r', encoding='utf-8') as file:
         data = file.readlines()
@@ -176,6 +175,7 @@ if __name__ == '__main__':
         os.makedirs(folder_name)
 
     for i in range(3):################################################改range就可以指定跑哪幾組###############################
+        start = time.time()
         file_name = f'{folder_name}/result_{i}.txt'### txt name    
         root_node = {
             'id':id,
