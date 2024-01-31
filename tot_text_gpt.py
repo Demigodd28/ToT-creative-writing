@@ -22,16 +22,17 @@ def Generator(llm, node):
     for i in range(len(a)):
         a[i] += '.'
     ##put rootnode['answer'] into a 4 or 3 elements list
-    
+    print("    Generating...")
     for _ in range(5):
         ans_from_llm = {}
         filtered_ans = ""
-
+        print(f"\tsending request to gpt...{_}")
         for i in range(len(a)):    
             if node[0] == None:###no plan
                 user_content = user_cotprompt_1.format(input = a[i])
                 ans_from_llm = llm.chat.completions.create(
                     model = 'gpt-3.5-turbo-1106',
+                    temperature = 1.0,
                     messages = [
                         {"role": "user", "content": user_content}
                     ]
@@ -55,6 +56,7 @@ def Generator(llm, node):
                     if check_1 == False:
                         ans_from_llm = llm.chat.completions.create(
                             model = 'gpt-3.5-turbo-1106',
+                            temperature = 1.0,
                             messages = [
                                 {"role": "user", "content": user_content}
                             ]
@@ -89,8 +91,10 @@ def Evaluator(llm, node):#node = []
     completion_token_3 = 0##calculate usage
     prompt_token_3 = 0
 
+    print("    Evaluating...")
     ans_from_llm = llm.chat.completions.create(
         model = 'gpt-3.5-turbo-1106',
+        temperature = 1.0,
         messages = [
             {"role": "system", "content": system_voteprompt},
             {"role": "user", "content": user_voteprompt + 'Choices: ' + node[0]['answer'][0] + node[1]['answer'][0] + node[2]['answer'][0] + node[3]['answer'][0] + node[4]['answer'][0]}
@@ -116,10 +120,13 @@ def Grade(llm, text):
     completion_tokens_4 = 0
     prompt_tokens_4 = 0
 
+    print("    Grading...")
     for _ in range(5):# grade for 5 times
+        print(f"\tsending request to gpt...{_}")
         try:
             ans_from_llm = llm.chat.completions.create(
                 model='gpt-4-0613',
+                temperature = 1.0,
                 messages=[
                     {"role": "user", "content": score_prompt + text}
                 ]
@@ -163,10 +170,11 @@ def Draw(data_list, folder):##draw the barchart
 
     save_path = os.path.join(folder, 'Data barchart.png')
     plt.savefig(save_path)
-    plt.show()
 
 if __name__ == '__main__':
     score_list = []## record all the score
+    scores = 0
+    print(f"generating model = \"gpt-3.5-turbo-1106\", grading model = \"gpt-4-0613\", temperature = 1.0")
     with open('data_100_random_text.txt', 'r', encoding='utf-8') as file:
         data = file.readlines()
     
@@ -174,8 +182,9 @@ if __name__ == '__main__':
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
 
-    for i in range(3):################################################改range就可以指定跑哪幾組###############################
+    for i in range(task_start_index, task_end_index):################################################改range就可以指定跑哪幾組###############################
         start = time.time()
+        print(f"Solving index = {i}")
         file_name = f'{folder_name}/result_{i}.txt'### txt name    
         root_node = {
             'id':id,
@@ -190,6 +199,7 @@ if __name__ == '__main__':
         prompt_token_3 = 0
         completion_token_4 = 0
         prompt_token_4 = 0
+        cost=0
 
         writing_plans = Generator(llm, [None, root_node])### Generator(llm, [plan, root_node])  no plan -->None
         completion_token_3 += writing_plans[-1][0]
@@ -216,6 +226,8 @@ if __name__ == '__main__':
         completion_token_4 = graded[1][0]###
         prompt_token_4 = graded[1][1]###
 
+        cost = (completion_token_3*0.002 + prompt_token_3*0.001 + completion_token_4*0.003 + prompt_token_4*0.001)/1000
+
         with open(file_name, 'w', encoding='utf-8') as file:### open new txt
             file.write(root_node['answer'][0])
             file.write('\n...........................\n')
@@ -228,13 +240,33 @@ if __name__ == '__main__':
             file.write(f"\ngpt-3.5 prompt token = {prompt_token_3}")
             file.write(f"\ngpt-4 completion token = {completion_token_4}")
             file.write(f"\ngpt-4 prompt token = {prompt_token_4}")
+            file.write(f"\ncost = {cost}")
+            print(root_node['answer'][0])
+            print('...........................')
+            print(best_plan[0]['answer'][0])
+            print('--- --- --- --- --- --- ---')
+            print(best_passage[0]['answer'][0])
+            print('---------------------------')
+            print(f"gpt-3.5 completion token = {completion_token_3}")
+            print(f"gpt-3.5 prompt token = {prompt_token_3}")
+            print(f"gpt-4 completion token = {completion_token_4}")
+            print(f"gpt-4 prompt token = {prompt_token_4}")
+            print(f"cost = {cost}")
         finish = time.time()
         with open(file_name, 'a', encoding='utf-8') as file:
-            file.write(f"\n\ntotal time = {finish - start}")
+            file.write(f"\n\ntotal time = {finish - start}\n")
+            print(f"total time = {finish - start}")
+            print(f"\nid = {i}, score = {score}\n")
        
         score_list.append(score)
+        scores += score
         # print(score)
     Draw(score_list, folder_name)
-    print(finish - start)
+    for i in range(task_start_index, task_end_index):
+        print(f"idx {i} : {score_list[i]}")
+    avg_score = scores/(task_end_index-task_start_index)
+    print(f"\naverage score = {avg_score}")
+    # print(finish - start)
+    print("\n---------- DONE! ----------")
              
     
