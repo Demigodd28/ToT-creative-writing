@@ -1,10 +1,15 @@
+import os
+
 id = 0
+
+task_start_index = 0
+task_end_index = 100
 
 def increase_id():
     global id  # 明確指定訪問全局變數 id
     id += 1
 
-OPENAI_API_KEY = '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'
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
 #llama cpp openhermes prompt
 cot_prompt_1 = '''
