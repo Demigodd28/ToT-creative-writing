@@ -37,14 +37,14 @@ def Generator(llm, node):
                         {"role": "user", "content": user_content}
                     ]
                 )
-                filtered_ans += ans_from_llm.choices[0].message.content + "\n"
+                filtered_ans += ans_from_llm.choices[0].message.content + "\n@\n"
                 # print('ok\t')
                 completion_token_3 += ans_from_llm.usage.completion_tokens
                 prompt_token_3 += ans_from_llm.usage.prompt_tokens
             else:
                 ##
-                b = node[0][0]['answer'][0].split('. ')
-                b = [sentence.strip() for sentence in b if sentence.strip()]
+                b = node[0][0]['answer'][0].split('@')###modify the method of chopping plans
+                # b = [sentence.strip() for sentence in b if sentence.strip()]
                 for j in range(len(b)):
                     b[j] += '.'
                 ##put plan['answer'] into a 4 or 3 elements list
@@ -78,7 +78,6 @@ def Generator(llm, node):
 
         output.append(new_node)
     output.append([completion_token_3, prompt_token_3])
-        # print('@')
     return output
 
         
@@ -173,16 +172,19 @@ def Draw(data_list, folder):##draw the barchart
 
 if __name__ == '__main__':
     score_list = []## record all the score
-    scores = 0
+    scores = 0## calc all to ave score 
     print(f"generating model = \"gpt-3.5-turbo-1106\", grading model = \"gpt-4-0613\", temperature = 1.0")
     with open('data_100_random_text.txt', 'r', encoding='utf-8') as file:
         data = file.readlines()
+    for i in range(100):###filter special letters
+        if "’" in data[i]:
+            data[i].replace("’", "'")  
     
     folder_name = f'GPT Result {date.today()}'## build new folder 'GPT Result 2024-01-19'
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
 
-    for i in range(task_start_index, task_end_index):################################################改range就可以指定跑哪幾組###############################
+    for i in range(task_start_index, task_end_index):##########
         start = time.time()
         print(f"Solving index = {i}")
         file_name = f'{folder_name}/result_{i}.txt'### txt name    
@@ -241,12 +243,12 @@ if __name__ == '__main__':
             file.write(f"\ngpt-4 completion token = {completion_token_4}")
             file.write(f"\ngpt-4 prompt token = {prompt_token_4}")
             file.write(f"\ncost = {cost}")
-            print(root_node['answer'][0])
-            print('...........................')
-            print(best_plan[0]['answer'][0])
-            print('--- --- --- --- --- --- ---')
-            print(best_passage[0]['answer'][0])
-            print('---------------------------')
+            # print(root_node['answer'][0])
+            # print('...........................')
+            # print(best_plan[0]['answer'][0])
+            # print('--- --- --- --- --- --- ---')
+            # print(best_passage[0]['answer'][0])
+            # print('---------------------------')
             print(f"gpt-3.5 completion token = {completion_token_3}")
             print(f"gpt-3.5 prompt token = {prompt_token_3}")
             print(f"gpt-4 completion token = {completion_token_4}")
@@ -263,10 +265,9 @@ if __name__ == '__main__':
         # print(score)
     Draw(score_list, folder_name)
     for i in range(task_start_index, task_end_index):
-        print(f"idx {i} : {score_list[i]}")
+        print(f"idx {i} : {score_list[i-task_start_index]}")
     avg_score = scores/(task_end_index-task_start_index)
-    print(f"\naverage score = {avg_score}")
-    # print(finish - start)
+    print(f"\naverage score = {round(avg_score, 2)}")
     print("\n---------- DONE! ----------")
              
     

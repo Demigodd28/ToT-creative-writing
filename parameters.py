@@ -2,8 +2,8 @@ import os
 
 id = 0
 
-task_start_index = 0
-task_end_index = 100
+task_start_index = 5
+task_end_index = 7
 
 def increase_id():
     global id  # 明確指定訪問全局變數 id
