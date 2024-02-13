@@ -2,8 +2,8 @@ import os
 
 id = 0
 
-task_start_index = 5
-task_end_index = 7
+task_start_index = 11
+task_end_index = 14
 
 def increase_id():
     global id  # 明確指定訪問全局變數 id
@@ -51,7 +51,7 @@ Your output should be of the following format:
 '''
 
 ##OpenAI prompt
-user_cotprompt_1 = "Make a coherent writing plan of the sentence: {input}. And conclude in only one sentence"
+user_cotprompt_1 = "Make a coherent writing plan of the sentence: {input}."
 
 user_cotprompt_2 = "Write a coherent short paragraph in topic of: {plan}. The end sentence of paragraph must be: {input}"
 

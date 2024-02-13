@@ -137,7 +137,7 @@ def Grade(llm, text):
             filtered_ans = ans_from_llm.choices[0].message.content
             match = re.search(r'\d+', filtered_ans)
 
-            if match and match.group().isdigit():
+            if match and match.group().isdigit() and int(match.group()) < 10:
                 scores.append(int(match.group()))
         except Exception as e:
             print(f"An error occurred during grading: {e}")
@@ -173,7 +173,7 @@ def Draw(data_list, folder):##draw the barchart
 if __name__ == '__main__':
     score_list = []## record all the score
     scores = 0## calc all to ave score 
-    print(f"generating model = \"gpt-3.5-turbo-1106\", grading model = \"gpt-4-0613\", temperature = 1.0")
+    print('''generating model = "gpt-3.5-turbo-1106", grading model = "gpt-4-0613", temperature = 1.0''')
     with open('data_100_random_text.txt', 'r', encoding='utf-8') as file:
         data = file.readlines()
     for i in range(100):###filter special letters
@@ -249,16 +249,16 @@ if __name__ == '__main__':
             # print('--- --- --- --- --- --- ---')
             # print(best_passage[0]['answer'][0])
             # print('---------------------------')
-            print(f"gpt-3.5 completion token = {completion_token_3}")
+            print(f"\n\ngpt-3.5 completion token = {completion_token_3}")
             print(f"gpt-3.5 prompt token = {prompt_token_3}")
             print(f"gpt-4 completion token = {completion_token_4}")
             print(f"gpt-4 prompt token = {prompt_token_4}")
             print(f"cost = {cost}")
         finish = time.time()
         with open(file_name, 'a', encoding='utf-8') as file:
-            file.write(f"\n\ntotal time = {finish - start}\n")
+            file.write(f"total time = {finish - start}")
             print(f"total time = {finish - start}")
-            print(f"\nid = {i}, score = {score}\n")
+            print(f"\n\nid = {i}, score = {score}")
        
         score_list.append(score)
         scores += score
